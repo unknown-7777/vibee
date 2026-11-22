@@ -1,5 +1,9 @@
 <script setup>
 import { Disc3, Heart, House, ListMusic, Mic, Music, Plus } from 'lucide-vue-next'
+import ImportStatus from './ImportStatus.vue'
+import { useLibraryStore } from '../../stores/library'
+
+const library = useLibraryStore()
 
 const items = [
   { to: '/', label: 'Home', icon: House },
@@ -13,7 +17,6 @@ const items = [
 
 <template>
   <aside class="flex w-60 shrink-0 flex-col border-r border-line bg-sidebar">
-    <!-- Traffic lights sit here; empty strip = drag handle -->
     <div class="drag h-14 shrink-0"></div>
 
     <nav class="flex-1 space-y-0.5 px-3">
@@ -36,14 +39,17 @@ const items = [
       </RouterLink>
     </nav>
 
-    <div class="p-3">
-      <!-- Wired up in Phase 3 -->
+    <ImportStatus />
+
+    <div class="p-3 pt-0">
       <button
         type="button"
-        class="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-black transition hover:opacity-90"
+        class="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-black transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-60"
+        :disabled="library.isImporting"
+        @click="library.importMusic()"
       >
         <Plus :size="16" :stroke-width="2.25" />
-        Import Music
+        {{ library.isImporting ? 'Importing…' : 'Import Music' }}
       </button>
     </div>
   </aside>

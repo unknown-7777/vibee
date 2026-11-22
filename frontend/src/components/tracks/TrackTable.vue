@@ -67,7 +67,7 @@ const isCurrent = (track) => player.currentTrack?.id === track.id
       </button>
 
       <div class="flex min-w-0 items-center gap-3">
-        <ArtworkTile :hue="track.hue" class="size-10 shrink-0 rounded" />
+        <ArtworkTile :hue="track.hue" :src="track.artworkUrl" class="size-10 shrink-0 rounded" />
         <span class="truncate text-sm font-medium" :class="isCurrent(track) ? 'text-accent' : ''">
           {{ track.title }}
         </span>

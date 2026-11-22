@@ -12,6 +12,12 @@ export const useLibraryStore = defineStore('library', () => {
   const isLoading = ref(false)
   const error = ref(null)
 
+  // Import state
+  const isImporting = ref(false)
+  const importProgress = ref(null) // { stage, processed, total, failed } while running
+  const lastImport = ref(null) // summary of the last finished import
+  const importError = ref(null)
+
   const isEmpty = computed(() => !isLoading.value && !error.value && tracks.value.length === 0)
 
   async function load() {
@@ -20,13 +26,47 @@ export const useLibraryStore = defineStore('library', () => {
     error.value = null
     try {
       const rows = await bridge.library.getTracks()
-      tracks.value = rows.map((row) => ({ ...row, hue: hueFromString(row.album) }))
+      tracks.value = rows.map((row) => ({
+        ...row,
+        hue: hueFromString(row.album),
+        artworkUrl: row.artworkPath ? `vibee-media://artwork/${row.artworkPath}` : null,
+      }))
     } catch (err) {
       console.error('Failed to load library', err)
       error.value = 'Could not load your library.'
     } finally {
       isLoading.value = false
     }
+  }
+
+  async function importMusic() {
+    if (!bridge || isImporting.value) return
+    isImporting.value = true
+    lastImport.value = null
+    importError.value = null
+
+    const stopListening = bridge.library.onImportProgress((progress) => {
+      importProgress.value = progress
+    })
+
+    try {
+      const result = await bridge.library.importMusic()
+      if (result.canceled || result.busy) return // finally{} below still cleans up
+      lastImport.value = result
+      await load()
+    } catch (err) {
+      console.error('Import failed', err)
+      importError.value = 'Import failed. Check the terminal for details.'
+    } finally {
+      stopListening()
+      importProgress.value = null
+      isImporting.value = false
+    }
+  }
+
+  function dismissImportSummary() {
+    lastImport.value = null
+    importError.value = null
   }
 
   const recentlyAdded = computed(() =>
@@ -48,6 +88,7 @@ export const useLibraryStore = defineStore('library', () => {
 
   return {
     tracks, playlists, isLoading, error, isEmpty, load,
+    isImporting, importProgress, lastImport, importError, importMusic, dismissImportSummary,
     recentlyAdded, recentlyPlayed, favorites, recentPlaylists,
   }
 })

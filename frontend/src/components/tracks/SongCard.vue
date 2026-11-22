@@ -18,7 +18,7 @@ const isCurrent = computed(() => player.currentTrack?.id === props.track.id)
     @click="$emit('play')"
   >
     <div class="relative">
-      <ArtworkTile :hue="track.hue" class="aspect-square w-full rounded-lg" />
+      <ArtworkTile :hue="track.hue" :src="track.artworkUrl" class="aspect-square w-full rounded-lg" />
       <span
         class="absolute right-2 bottom-2 grid size-10 translate-y-1 place-items-center rounded-full bg-accent text-black opacity-0 shadow-lg transition group-hover:translate-y-0 group-hover:opacity-100"
       >

@@ -17,6 +17,7 @@
     "wait-on": "^9.5.1"
   },
   "dependencies": {
-    "better-sqlite3": "^13.2.0"
+    "better-sqlite3": "^13.2.0",
+    "music-metadata": "^12.8.0"
   }
 }

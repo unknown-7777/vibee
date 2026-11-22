@@ -1,12 +1,13 @@
+import { randomUUID } from 'node:crypto'
 import { getDb } from './connection.js'
 
-// Column aliases are camelCase so rows already match what the Vue app expects.
 const SELECT_TRACKS = `
   SELECT
     t.id,
     t.title,
     t.artist,
     t.album,
+    t.track_number AS trackNumber,
     t.duration_sec AS durationSec,
     t.format,
     t.artwork_path AS artworkPath,
@@ -26,7 +27,56 @@ export function getAllTracks() {
     .all()
     .map((row) => ({
       ...row,
-      isMissing: Boolean(row.isMissing), // SQLite stores booleans as 0 / 1
+      isMissing: Boolean(row.isMissing),
       isFavorite: Boolean(row.isFavorite),
     }))
+}
+
+// Inserts new tracks and refreshes existing ones (matched by file path),
+// all inside ONE transaction: it is much faster than one commit per song,
+// and a batch is either saved completely or not at all.
+export function upsertTracks(tracks, addedAt) {
+  const db = getDb()
+  const now = new Date().toISOString()
+
+  const findByPath = db.prepare('SELECT id FROM tracks WHERE file_path = ?')
+
+  const insert = db.prepare(`
+    INSERT INTO tracks (
+      id, file_path, title, artist, album, album_artist, track_number, year, genre,
+      duration_sec, format, file_size, artwork_path, is_missing, added_at, updated_at
+    ) VALUES (
+      @id, @filePath, @title, @artist, @album, @albumArtist, @trackNumber, @year, @genre,
+      @durationSec, @format, @fileSize, @artworkPath, 0, @addedAt, @now
+    )
+  `)
+
+  // Re-importing a known file refreshes its tags, brings back a missing or
+  // deleted track, and keeps the original id and added_at.
+  const update = db.prepare(`
+    UPDATE tracks SET
+      title = @title, artist = @artist, album = @album, album_artist = @albumArtist,
+      track_number = @trackNumber, year = @year, genre = @genre,
+      duration_sec = @durationSec, format = @format, file_size = @fileSize,
+      artwork_path = @artworkPath, is_missing = 0, deleted_at = NULL, updated_at = @now
+    WHERE id = @id
+  `)
+
+  let added = 0
+  let updated = 0
+
+  db.transaction(() => {
+    for (const track of tracks) {
+      const existing = findByPath.get(track.filePath)
+      if (existing) {
+        update.run({ ...track, id: existing.id, now })
+        updated++
+      } else {
+        insert.run({ ...track, id: randomUUID(), addedAt, now })
+        added++
+      }
+    }
+  })()
+
+  return { added, updated }
 }

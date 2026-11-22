@@ -6,5 +6,14 @@ contextBridge.exposeInMainWorld('vibee', {
   ping: () => ipcRenderer.invoke('app:ping'),
   library: {
     getTracks: () => ipcRenderer.invoke('library:getTracks'),
+    importMusic: () => ipcRenderer.invoke('library:import'),
+
+    // Subscribes to progress updates and returns a function that unsubscribes.
+    // The raw IPC event object is deliberately NOT passed to the page.
+    onImportProgress: (callback) => {
+      const listener = (_event, progress) => callback(progress)
+      ipcRenderer.on('library:importProgress', listener)
+      return () => ipcRenderer.removeListener('library:importProgress', listener)
+    },
   },
 })
