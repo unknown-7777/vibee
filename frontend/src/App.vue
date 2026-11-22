@@ -1,6 +1,11 @@
 <script setup>
+import { onMounted } from 'vue'
 import AppSidebar from './components/layout/AppSidebar.vue'
 import PlayerBar from './components/player/PlayerBar.vue'
+import { useLibraryStore } from './stores/library'
+
+const library = useLibraryStore()
+onMounted(() => library.load())
 </script>
 
 <template>

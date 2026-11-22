@@ -5,6 +5,7 @@ import SectionBlock from '../components/common/SectionBlock.vue'
 import SongCard from '../components/tracks/SongCard.vue'
 import { useLibraryStore } from '../stores/library'
 import { usePlayerStore } from '../stores/player'
+import EmptyLibrary from '../components/common/EmptyLibrary.vue'
 
 const library = useLibraryStore()
 const player = usePlayerStore()
@@ -20,6 +21,8 @@ const greeting = computed(() => {
 <template>
   <div class="space-y-10 px-8 pb-10">
     <h1 class="text-3xl font-semibold tracking-tight">{{ greeting }}</h1>
+
+        <EmptyLibrary v-if="library.isEmpty" />
 
     <SectionBlock v-if="library.recentlyAdded.length" title="Recently added">
       <SongCard

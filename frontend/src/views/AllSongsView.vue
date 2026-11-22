@@ -51,4 +51,14 @@ const play = (track) => player.playTrack(track, sortedTracks.value)
       @play="play"
     />
   </div>
+
+  <EmptyLibrary v-if="library.isEmpty" />
+  <TrackTable
+    v-else
+    :tracks="sortedTracks"
+    :sort-key="sortKey"
+    :sort-dir="sortDir"
+    @sort="setSort"
+    @play="play"
+  />
 </template>
