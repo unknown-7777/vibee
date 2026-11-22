@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Tailwind v4 reads design tokens from @theme.
+   Each --color-xxx becomes utility classes: bg-xxx, text-xxx, border-xxx. */
+@theme {
+  --color-bg: #111113;
+  --color-sidebar: #18181b;
+  --color-card: #202024;
+  --color-accent: #a78bfa;
+  --color-fg: #ffffff;
+  --color-muted: #a1a1aa;
+  --color-line: rgb(255 255 255 / 0.08);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;       /* the window itself never scrolls; inner panels do */
+  user-select: none;      /* native apps don't let you select UI text */
+  cursor: default;
+}
+
+/* Lets the user drag the window by grabbing these areas. */
+.drag { -webkit-app-region: drag; }
+.no-drag { -webkit-app-region: no-drag; }
