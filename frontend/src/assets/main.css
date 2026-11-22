@@ -33,3 +33,44 @@ body {
 /* Lets the user drag the window by grabbing these areas. */
 .drag { -webkit-app-region: drag; }
 .no-drag { -webkit-app-region: no-drag; }
+
+/* Slim dark scrollbars */
+::-webkit-scrollbar { width: 12px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.14);
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+}
+
+/* Page fade */
+.page-enter-active,
+.page-leave-active { transition: opacity 0.12s ease; }
+.page-enter-from,
+.page-leave-to { opacity: 0; }
+
+/* Range sliders (progress + volume) */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  background: linear-gradient(to right, #fff var(--fill, 0%), rgb(255 255 255 / 0.18) var(--fill, 0%));
+}
+.slider:hover:not(:disabled) {
+  background: linear-gradient(to right, var(--color-accent) var(--fill, 0%), rgb(255 255 255 / 0.18) var(--fill, 0%));
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #fff;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.slider:hover:not(:disabled)::-webkit-slider-thumb { opacity: 1; }
+.slider:disabled { opacity: 0.4; cursor: default; }

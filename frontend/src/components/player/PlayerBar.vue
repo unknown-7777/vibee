@@ -1,0 +1,90 @@
+<script setup>
+import { computed } from 'vue'
+import {
+  ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX,
+} from 'lucide-vue-next'
+import ArtworkTile from '../common/ArtworkTile.vue'
+import IconButton from '../common/IconButton.vue'
+import Slider from '../common/Slider.vue'
+import { usePlayerStore } from '../../stores/player'
+import { formatDuration } from '../../utils/format.js'
+
+const player = usePlayerStore()
+
+const hasTrack = computed(() => player.currentTrack !== null)
+const duration = computed(() => player.currentTrack?.durationSec ?? 0)
+const repeatIcon = computed(() => (player.repeat === 'one' ? Repeat1 : Repeat))
+const volumeIcon = computed(() => (player.volume === 0 ? VolumeX : Volume2))
+</script>
+
+<template>
+  <footer
+    class="grid h-24 shrink-0 grid-cols-[1fr_minmax(0,2fr)_1fr] items-center gap-6 border-t border-line bg-sidebar px-5"
+  >
+    <!-- Now playing -->
+    <div class="flex min-w-0 items-center gap-3">
+      <template v-if="hasTrack">
+        <ArtworkTile :hue="player.currentTrack.hue" class="size-14 shrink-0 rounded-md" />
+        <div class="min-w-0">
+          <p class="truncate text-sm font-medium">{{ player.currentTrack.title }}</p>
+          <p class="truncate text-xs text-muted">{{ player.currentTrack.artist }}</p>
+        </div>
+      </template>
+      <p v-else class="text-sm text-muted">Nothing playing</p>
+    </div>
+
+    <!-- Controls + progress -->
+    <div class="flex flex-col items-center gap-2">
+      <div class="flex items-center gap-4">
+        <IconButton :active="player.shuffle" title="Shuffle" @click="player.toggleShuffle()">
+          <Shuffle :size="18" />
+        </IconButton>
+        <IconButton :disabled="!hasTrack" title="Previous" @click="player.previous()">
+          <SkipBack :size="20" fill="currentColor" />
+        </IconButton>
+        <button
+          type="button"
+          class="grid size-10 place-items-center rounded-full bg-fg text-black transition hover:scale-105 disabled:pointer-events-none disabled:opacity-40"
+          :disabled="!hasTrack"
+          :title="player.isPlaying ? 'Pause' : 'Play'"
+          @click="player.togglePlay()"
+        >
+          <Pause v-if="player.isPlaying" :size="18" fill="currentColor" />
+          <Play v-else :size="18" fill="currentColor" class="translate-x-px" />
+        </button>
+        <IconButton :disabled="!hasTrack" title="Next" @click="player.next()">
+          <SkipForward :size="20" fill="currentColor" />
+        </IconButton>
+        <IconButton :active="player.repeat !== 'off'" title="Repeat" @click="player.cycleRepeat()">
+          <component :is="repeatIcon" :size="18" />
+        </IconButton>
+      </div>
+
+      <div class="flex w-full max-w-xl items-center gap-3 text-xs tabular-nums text-muted">
+        <span class="w-10 text-right">{{ formatDuration(player.currentTime) }}</span>
+        <Slider
+          class="flex-1"
+          :model-value="player.currentTime"
+          :max="duration || 1"
+          :disabled="!hasTrack"
+          @update:model-value="player.seek"
+        />
+        <span class="w-10">{{ formatDuration(duration) }}</span>
+      </div>
+    </div>
+
+    <!-- Queue + volume -->
+    <div class="flex items-center justify-end gap-3">
+      <IconButton title="Queue"><ListMusic :size="18" /></IconButton>
+      <component :is="volumeIcon" :size="18" class="shrink-0 text-muted" />
+      <Slider
+        class="w-28"
+        :model-value="player.volume"
+        :min="0"
+        :max="1"
+        :step="0.01"
+        @update:model-value="player.setVolume"
+      />
+    </div>
+  </footer>
+</template>
