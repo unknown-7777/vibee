@@ -18,7 +18,12 @@ export const useLibraryStore = defineStore('library', () => {
   const lastImport = ref(null) // summary of the last finished import
   const importError = ref(null)
 
+  // Missing-file state
+  const isVerifying = ref(false)
+  const rescanNote = ref(null) // short result message after a manual rescan
+
   const isEmpty = computed(() => !isLoading.value && !error.value && tracks.value.length === 0)
+  const missingCount = computed(() => tracks.value.filter((track) => track.isMissing).length)
 
   async function load() {
     if (!bridge) return // opened in a plain browser, not inside Electron
@@ -69,6 +74,55 @@ export const useLibraryStore = defineStore('library', () => {
     importError.value = null
   }
 
+  // ---- Missing files ----
+
+  let noteTimer
+  function showNote(text) {
+    rescanNote.value = text
+    clearTimeout(noteTimer)
+    noteTimer = setTimeout(() => { rescanNote.value = null }, 6000)
+  }
+
+  function describeCheck(result) {
+    if (result.checked === 0) return 'Nothing to check yet'
+    const parts = []
+    if (result.restored > 0) parts.push(`${result.restored} found again`)
+    if (result.nowMissing > 0) parts.push(`${result.nowMissing} newly missing`)
+    if (parts.length === 0) {
+      parts.push(result.totalMissing > 0 ? 'No changes' : `All ${result.checked} songs found`)
+    }
+    if (result.unreadable > 0) parts.push(`${result.unreadable} could not be checked (no permission)`)
+    return parts.join(' · ')
+  }
+
+  // Checks that every file still exists. Silent by default (used at startup);
+  // pass { announce: true } for the manual Rescan button.
+  async function verify({ announce = false } = {}) {
+    if (!bridge || isVerifying.value) return
+    isVerifying.value = true
+    try {
+      const result = await bridge.library.verify()
+      if (result.skipped) return
+      if (result.nowMissing > 0 || result.restored > 0) await load()
+      if (announce) showNote(describeCheck(result))
+    } catch (err) {
+      console.error('Library check failed', err)
+      if (announce) showNote('Could not check the library')
+    } finally {
+      isVerifying.value = false
+    }
+  }
+
+  async function removeMissing() {
+    if (!bridge) return
+    try {
+      const result = await bridge.library.removeMissing()
+      if (result.removed > 0) await load()
+    } catch (err) {
+      console.error('Failed to remove missing songs', err)
+    }
+  }
+
   const recentlyAdded = computed(() =>
     [...tracks.value].sort((a, b) => time(b.addedAt) - time(a.addedAt)).slice(0, SHELF_SIZE),
   )
@@ -87,8 +141,9 @@ export const useLibraryStore = defineStore('library', () => {
   )
 
   return {
-    tracks, playlists, isLoading, error, isEmpty, load,
+    tracks, playlists, isLoading, error, isEmpty, missingCount, load,
     isImporting, importProgress, lastImport, importError, importMusic, dismissImportSummary,
+    isVerifying, rescanNote, verify, removeMissing,
     recentlyAdded, recentlyPlayed, favorites, recentPlaylists,
   }
 })

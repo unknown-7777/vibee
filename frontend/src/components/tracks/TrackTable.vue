@@ -1,5 +1,5 @@
 <script setup>
-import { ArrowDown, ArrowUp, Clock, Play } from 'lucide-vue-next'
+import { ArrowDown, ArrowUp, Clock, Play, TriangleAlert } from 'lucide-vue-next'
 import ArtworkTile from '../common/ArtworkTile.vue'
 import { usePlayerStore } from '../../stores/player'
 import { formatDate, formatDuration } from '../../utils/format.js'
@@ -51,7 +51,8 @@ const isCurrent = (track) => player.currentTrack?.id === track.id
     <div
       v-for="(track, index) in tracks"
       :key="track.id"
-      :class="columns"
+      :class="[columns, track.isMissing && 'opacity-45']"
+      :title="track.isMissing ? 'File not found' : undefined"
       class="group h-14 rounded-md transition-colors hover:bg-white/5"
       @dblclick="$emit('play', track)"
     >
@@ -60,10 +61,17 @@ const isCurrent = (track) => player.currentTrack?.id === track.id
         class="grid place-items-center text-sm tabular-nums text-muted"
         @click="$emit('play', track)"
       >
-        <span class="group-hover:hidden" :class="isCurrent(track) ? 'text-accent' : ''">
+        <span
+          :class="[isCurrent(track) ? 'text-accent' : '', !track.isMissing && 'group-hover:hidden']"
+        >
           {{ index + 1 }}
         </span>
-        <Play :size="14" fill="currentColor" class="hidden text-fg group-hover:block" />
+        <Play
+          v-if="!track.isMissing"
+          :size="14"
+          fill="currentColor"
+          class="hidden text-fg group-hover:block"
+        />
       </button>
 
       <div class="flex min-w-0 items-center gap-3">
@@ -71,6 +79,7 @@ const isCurrent = (track) => player.currentTrack?.id === track.id
         <span class="truncate text-sm font-medium" :class="isCurrent(track) ? 'text-accent' : ''">
           {{ track.title }}
         </span>
+        <TriangleAlert v-if="track.isMissing" :size="14" class="shrink-0 text-amber-400" />
       </div>
       <span class="truncate text-sm text-muted">{{ track.artist }}</span>
       <span class="truncate text-sm text-muted">{{ track.album }}</span>

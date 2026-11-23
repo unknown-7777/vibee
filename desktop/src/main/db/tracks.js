@@ -80,3 +80,39 @@ export function upsertTracks(tracks, addedAt) {
 
   return { added, updated }
 }
+
+
+// ---- Missing-file support -------------------------------------------------
+
+export function getTrackFileStates() {
+  return getDb()
+    .prepare('SELECT id, file_path AS filePath, is_missing AS isMissing FROM tracks WHERE deleted_at IS NULL')
+    .all()
+}
+
+// Only rows whose state actually changes are touched, so updated_at stays meaningful.
+export function applyMissingStates({ markMissing, markPresent }) {
+  const db = getDb()
+  const now = new Date().toISOString()
+  const setFlag = db.prepare('UPDATE tracks SET is_missing = ?, updated_at = ? WHERE id = ?')
+
+  db.transaction(() => {
+    for (const id of markMissing) setFlag.run(1, now, id)
+    for (const id of markPresent) setFlag.run(0, now, id)
+  })()
+}
+
+export function countMissingTracks() {
+  return getDb()
+    .prepare('SELECT COUNT(*) AS count FROM tracks WHERE is_missing = 1 AND deleted_at IS NULL')
+    .get().count
+}
+
+// "Removing" is a soft delete: the row stays (stamped with deleted_at) so sync can
+// tell Laravel about it later. Importing the file again brings the track back.
+export function removeMissingTracks() {
+  const now = new Date().toISOString()
+  return getDb()
+    .prepare('UPDATE tracks SET deleted_at = ?, updated_at = ? WHERE is_missing = 1 AND deleted_at IS NULL')
+    .run(now, now).changes
+}

@@ -1,9 +1,9 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
-import path from 'node:path'
-import { getAllTracks } from '../db/tracks.js'
+import { countMissingTracks, getAllTracks, removeMissingTracks } from '../db/tracks.js'
 import { getArtworkDir } from '../paths.js'
 import { importPaths } from '../services/importer.js'
 import { AUDIO_EXTENSIONS } from '../services/scanner.js'
+import { verifyLibrary } from '../services/verifier.js'
 
 let isImporting = false
 
@@ -54,5 +54,33 @@ export function registerLibraryIpc() {
     } finally {
       isImporting = false
     }
+  })
+
+  // Checks every song's file still exists and updates the missing flags.
+  ipcMain.handle('library:verify', async () => {
+    if (isImporting) return { skipped: true } // don't race with an import
+    return verifyLibrary()
+  })
+
+  // Asks first, using a native macOS dialog, then removes all missing songs.
+  ipcMain.handle('library:removeMissing', async (event) => {
+    const count = countMissingTracks()
+    if (count === 0) return { removed: 0 }
+
+    const options = {
+      type: 'warning',
+      buttons: ['Cancel', 'Remove'],
+      defaultId: 0, // Enter key = the safe choice
+      cancelId: 0,
+      message: `Remove ${count} missing ${count === 1 ? 'song' : 'songs'} from your library?`,
+      detail: 'Your files are not touched. If you import them again later, they will come back.',
+    }
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const { response } = win
+      ? await dialog.showMessageBox(win, options)
+      : await dialog.showMessageBox(options)
+
+    if (response !== 1) return { removed: 0, canceled: true }
+    return { removed: removeMissingTracks() }
   })
 }

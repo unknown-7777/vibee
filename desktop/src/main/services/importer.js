@@ -2,23 +2,12 @@ import fs from 'node:fs/promises'
 import { upsertTracks } from '../db/tracks.js'
 import { saveArtwork } from './artwork.js'
 import { readTrackMetadata } from './metadata.js'
+import { runPool } from './pool.js'
 import { collectAudioFiles } from './scanner.js'
 
 const CONCURRENCY = 4 // files parsed at the same time
 const BATCH_SIZE = 50 // songs saved per database transaction
 const PROGRESS_INTERVAL_MS = 100
-
-// Runs `worker` over every item, `limit` at a time.
-async function runPool(items, limit, worker) {
-  let next = 0
-  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) {
-      const item = items[next++] // runs synchronously, so two runners never get the same item
-      await worker(item)
-    }
-  })
-  await Promise.all(runners)
-}
 
 export async function importPaths(selectedPaths, { artworkDir, onProgress = () => {} }) {
   const startedAt = Date.now()

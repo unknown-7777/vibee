@@ -15,9 +15,13 @@ export const usePlayerStore = defineStore('player', () => {
   const currentTrack = computed(() => queue.value[currentIndex.value] ?? null)
 
   // Play `track`, using `trackList` as the queue (e.g. the list it was clicked in).
+  // Missing songs can't play, so they never enter the queue.
   function playTrack(track, trackList = [track]) {
-    const index = trackList.findIndex((item) => item.id === track.id)
-    queue.value = index === -1 ? [track] : trackList
+    if (track.isMissing) return
+
+    const playable = trackList.filter((item) => !item.isMissing)
+    const index = playable.findIndex((item) => item.id === track.id)
+    queue.value = index === -1 ? [track] : playable
     currentIndex.value = index === -1 ? 0 : index
     currentTime.value = 0
     isPlaying.value = true

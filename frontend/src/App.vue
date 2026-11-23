@@ -5,7 +5,11 @@ import PlayerBar from './components/player/PlayerBar.vue'
 import { useLibraryStore } from './stores/library'
 
 const library = useLibraryStore()
-onMounted(() => library.load())
+
+onMounted(async () => {
+  await library.load()
+  library.verify() // silent background check for songs that moved or vanished
+})
 </script>
 
 <template>
