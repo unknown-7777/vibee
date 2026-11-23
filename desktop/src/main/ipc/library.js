@@ -1,5 +1,5 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
-import { countMissingTracks, getAllTracks, removeMissingTracks } from '../db/tracks.js'
+import { countMissingTracks, getAllTracks, recordPlay, removeMissingTracks } from '../db/tracks.js'
 import { getArtworkDir } from '../paths.js'
 import { importPaths } from '../services/importer.js'
 import { AUDIO_EXTENSIONS } from '../services/scanner.js'
@@ -9,6 +9,11 @@ let isImporting = false
 
 export function registerLibraryIpc() {
   ipcMain.handle('library:getTracks', () => getAllTracks())
+
+  // The player calls this once a song has been listened to for a while.
+  ipcMain.handle('library:recordPlay', (_event, trackId) =>
+    typeof trackId === 'string' ? recordPlay(trackId) : null,
+  )
 
   ipcMain.handle('library:import', async (event) => {
     if (isImporting) return { busy: true }

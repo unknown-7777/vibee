@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('vibee', {
     importMusic: () => ipcRenderer.invoke('library:import'),
     verify: () => ipcRenderer.invoke('library:verify'),
     removeMissing: () => ipcRenderer.invoke('library:removeMissing'),
+    recordPlay: (trackId) => ipcRenderer.invoke('library:recordPlay', trackId),
 
     // Subscribes to progress updates and returns a function that unsubscribes.
     // The raw IPC event object is deliberately NOT passed to the page.

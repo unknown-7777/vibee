@@ -123,6 +123,13 @@ export const useLibraryStore = defineStore('library', () => {
     }
   }
 
+  // Called by the player once a song has been listened to for a while,
+  // so "Recently played" updates instantly without reloading the library.
+  function markPlayed(trackId, playedAt) {
+    const track = tracks.value.find((item) => item.id === trackId)
+    if (track) track.lastPlayedAt = playedAt
+  }
+
   const recentlyAdded = computed(() =>
     [...tracks.value].sort((a, b) => time(b.addedAt) - time(a.addedAt)).slice(0, SHELF_SIZE),
   )
@@ -143,7 +150,7 @@ export const useLibraryStore = defineStore('library', () => {
   return {
     tracks, playlists, isLoading, error, isEmpty, missingCount, load,
     isImporting, importProgress, lastImport, importError, importMusic, dismissImportSummary,
-    isVerifying, rescanNote, verify, removeMissing,
+    isVerifying, rescanNote, verify, removeMissing, markPlayed,
     recentlyAdded, recentlyPlayed, favorites, recentPlaylists,
   }
 })

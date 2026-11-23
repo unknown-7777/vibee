@@ -8,6 +8,9 @@ const props = defineProps({
   step: { type: Number, default: 1 },
 })
 
+// "commit" fires when the user lets go of the slider, not on every drag movement.
+defineEmits(['commit'])
+
 // The CSS paints the filled part of the track up to --fill.
 const fill = computed(() => {
   const range = props.max - props.min
@@ -24,5 +27,6 @@ const fill = computed(() => {
     :max="max"
     :step="step"
     :style="{ '--fill': fill }"
+    @change="$emit('commit', Number($event.target.value))"
   />
 </template>

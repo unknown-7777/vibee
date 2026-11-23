@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import {
   ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX,
 } from 'lucide-vue-next'
@@ -12,9 +12,25 @@ import { formatDuration } from '../../utils/format.js'
 const player = usePlayerStore()
 
 const hasTrack = computed(() => player.currentTrack !== null)
-const duration = computed(() => player.currentTrack?.durationSec ?? 0)
+const duration = computed(() => player.duration || player.currentTrack?.durationSec || 0)
 const repeatIcon = computed(() => (player.repeat === 'one' ? Repeat1 : Repeat))
+const repeatTitle = computed(() => ({ off: 'Repeat: off', all: 'Repeat: all', one: 'Repeat: one' })[player.repeat])
 const volumeIcon = computed(() => (player.volume === 0 ? VolumeX : Volume2))
+
+// While dragging the progress bar only the knob moves; the song jumps when you let go.
+const isScrubbing = ref(false)
+const scrubTime = ref(0)
+const shownTime = computed(() => (isScrubbing.value ? scrubTime.value : player.currentTime))
+
+function onScrub(value) {
+  isScrubbing.value = true
+  scrubTime.value = value
+}
+
+function onScrubEnd(value) {
+  player.seek(value)
+  isScrubbing.value = false
+}
 </script>
 
 <template>
@@ -24,10 +40,16 @@ const volumeIcon = computed(() => (player.volume === 0 ? VolumeX : Volume2))
     <!-- Now playing -->
     <div class="flex min-w-0 items-center gap-3">
       <template v-if="hasTrack">
-        <ArtworkTile :hue="player.currentTrack.hue" class="size-14 shrink-0 rounded-md" />
+        <ArtworkTile
+          :hue="player.currentTrack.hue"
+          :src="player.currentTrack.artworkUrl"
+          class="size-14 shrink-0 rounded-md"
+        />
         <div class="min-w-0">
           <p class="truncate text-sm font-medium">{{ player.currentTrack.title }}</p>
-          <p class="truncate text-xs text-muted">{{ player.currentTrack.artist }}</p>
+          <p class="truncate text-xs" :class="player.error ? 'text-amber-400' : 'text-muted'">
+            {{ player.error ?? player.currentTrack.artist }}
+          </p>
         </div>
       </template>
       <p v-else class="text-sm text-muted">Nothing playing</p>
@@ -52,22 +74,24 @@ const volumeIcon = computed(() => (player.volume === 0 ? VolumeX : Volume2))
           <Pause v-if="player.isPlaying" :size="18" fill="currentColor" />
           <Play v-else :size="18" fill="currentColor" class="translate-x-px" />
         </button>
-        <IconButton :disabled="!hasTrack" title="Next" @click="player.next()">
+        <IconButton :disabled="!player.canNext" title="Next" @click="player.next()">
           <SkipForward :size="20" fill="currentColor" />
         </IconButton>
-        <IconButton :active="player.repeat !== 'off'" title="Repeat" @click="player.cycleRepeat()">
+        <IconButton :active="player.repeat !== 'off'" :title="repeatTitle" @click="player.cycleRepeat()">
           <component :is="repeatIcon" :size="18" />
         </IconButton>
       </div>
 
       <div class="flex w-full max-w-xl items-center gap-3 text-xs tabular-nums text-muted">
-        <span class="w-10 text-right">{{ formatDuration(player.currentTime) }}</span>
+        <span class="w-10 text-right">{{ formatDuration(shownTime) }}</span>
         <Slider
           class="flex-1"
-          :model-value="player.currentTime"
+          :model-value="shownTime"
           :max="duration || 1"
+          :step="0.25"
           :disabled="!hasTrack"
-          @update:model-value="player.seek"
+          @update:model-value="onScrub"
+          @commit="onScrubEnd"
         />
         <span class="w-10">{{ formatDuration(duration) }}</span>
       </div>
@@ -75,6 +99,7 @@ const volumeIcon = computed(() => (player.volume === 0 ? VolumeX : Volume2))
 
     <!-- Queue + volume -->
     <div class="flex items-center justify-end gap-3">
+      <!-- Queue panel arrives in Part 4B -->
       <IconButton title="Queue"><ListMusic :size="18" /></IconButton>
       <component :is="volumeIcon" :size="18" class="shrink-0 text-muted" />
       <Slider

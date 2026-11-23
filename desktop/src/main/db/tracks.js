@@ -116,3 +116,25 @@ export function removeMissingTracks() {
     .prepare('UPDATE tracks SET deleted_at = ?, updated_at = ? WHERE is_missing = 1 AND deleted_at IS NULL')
     .run(now, now).changes
 }
+
+// ---- Playback support -----------------------------------------------------
+
+// Used by the vibee-media:// protocol: the renderer asks for a track ID, never a path.
+export function getTrackFilePath(id) {
+  const row = getDb()
+    .prepare('SELECT file_path AS filePath FROM tracks WHERE id = ? AND deleted_at IS NULL')
+    .get(id)
+  return row?.filePath ?? null
+}
+
+// Adds a listening-history entry. Returns the timestamp, or null if the track doesn't exist.
+export function recordPlay(trackId) {
+  const playedAt = new Date().toISOString()
+  const { changes } = getDb()
+    .prepare(
+      `INSERT INTO play_history (id, track_id, played_at)
+       SELECT ?, id, ? FROM tracks WHERE id = ? AND deleted_at IS NULL`,
+    )
+    .run(randomUUID(), playedAt, trackId)
+  return changes > 0 ? playedAt : null
+}
