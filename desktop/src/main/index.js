@@ -3,6 +3,7 @@ import path from 'node:path'
 import { createMainWindow } from './window.js'
 import { registerAppIpc } from './ipc/app.js'
 import { registerLibraryIpc } from './ipc/library.js'
+import { registerUiIpc } from './ipc/ui.js'
 import { openDatabase, closeDatabase } from './db/connection.js'
 import { registerMediaProtocol, registerMediaScheme } from './protocol.js'
 
@@ -16,6 +17,7 @@ app.whenReady().then(() => {
   registerMediaProtocol()
   registerAppIpc()
   registerLibraryIpc()
+  registerUiIpc()
   createMainWindow()
 
   app.on('activate', () => {

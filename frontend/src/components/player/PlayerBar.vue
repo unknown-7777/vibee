@@ -7,14 +7,18 @@ import ArtworkTile from '../common/ArtworkTile.vue'
 import IconButton from '../common/IconButton.vue'
 import Slider from '../common/Slider.vue'
 import { usePlayerStore } from '../../stores/player'
+import { useUiStore } from '../../stores/ui'
 import { formatDuration } from '../../utils/format.js'
 
 const player = usePlayerStore()
+const ui = useUiStore()
 
 const hasTrack = computed(() => player.currentTrack !== null)
 const duration = computed(() => player.duration || player.currentTrack?.durationSec || 0)
 const repeatIcon = computed(() => (player.repeat === 'one' ? Repeat1 : Repeat))
-const repeatTitle = computed(() => ({ off: 'Repeat: off', all: 'Repeat: all', one: 'Repeat: one' })[player.repeat])
+const repeatTitle = computed(
+  () => ({ off: 'Repeat: off (R)', all: 'Repeat: all (R)', one: 'Repeat: one (R)' })[player.repeat],
+)
 const volumeIcon = computed(() => (player.volume === 0 ? VolumeX : Volume2))
 
 // While dragging the progress bar only the knob moves; the song jumps when you let go.
@@ -58,23 +62,23 @@ function onScrubEnd(value) {
     <!-- Controls + progress -->
     <div class="flex flex-col items-center gap-2">
       <div class="flex items-center gap-4">
-        <IconButton :active="player.shuffle" title="Shuffle" @click="player.toggleShuffle()">
+        <IconButton :active="player.shuffle" title="Shuffle (S)" @click="player.toggleShuffle()">
           <Shuffle :size="18" />
         </IconButton>
-        <IconButton :disabled="!hasTrack" title="Previous" @click="player.previous()">
+        <IconButton :disabled="!hasTrack" title="Previous (⌘←)" @click="player.previous()">
           <SkipBack :size="20" fill="currentColor" />
         </IconButton>
         <button
           type="button"
           class="grid size-10 place-items-center rounded-full bg-fg text-black transition hover:scale-105 disabled:pointer-events-none disabled:opacity-40"
           :disabled="!hasTrack"
-          :title="player.isPlaying ? 'Pause' : 'Play'"
+          :title="player.isPlaying ? 'Pause (Space)' : 'Play (Space)'"
           @click="player.togglePlay()"
         >
           <Pause v-if="player.isPlaying" :size="18" fill="currentColor" />
           <Play v-else :size="18" fill="currentColor" class="translate-x-px" />
         </button>
-        <IconButton :disabled="!player.canNext" title="Next" @click="player.next()">
+        <IconButton :disabled="!player.canNext" title="Next (⌘→)" @click="player.next()">
           <SkipForward :size="20" fill="currentColor" />
         </IconButton>
         <IconButton :active="player.repeat !== 'off'" :title="repeatTitle" @click="player.cycleRepeat()">
@@ -99,8 +103,9 @@ function onScrubEnd(value) {
 
     <!-- Queue + volume -->
     <div class="flex items-center justify-end gap-3">
-      <!-- Queue panel arrives in Part 4B -->
-      <IconButton title="Queue"><ListMusic :size="18" /></IconButton>
+      <IconButton :active="ui.isQueueOpen" title="Queue (Q)" @click="ui.toggleQueue()">
+        <ListMusic :size="18" />
+      </IconButton>
       <component :is="volumeIcon" :size="18" class="shrink-0 text-muted" />
       <Slider
         class="w-28"

@@ -19,4 +19,8 @@ contextBridge.exposeInMainWorld('vibee', {
       return () => ipcRenderer.removeListener('library:importProgress', listener)
     },
   },
+  ui: {
+    // Opens the native right-click menu for a song; resolves with the chosen action or null.
+    showTrackMenu: (options) => ipcRenderer.invoke('ui:trackMenu', options),
+  },
 })

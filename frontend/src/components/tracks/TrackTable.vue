@@ -1,6 +1,7 @@
 <script setup>
 import { ArrowDown, ArrowUp, Clock, Play, TriangleAlert } from 'lucide-vue-next'
 import ArtworkTile from '../common/ArtworkTile.vue'
+import { useTrackMenu } from '../../composables/useTrackMenu'
 import { usePlayerStore } from '../../stores/player'
 import { formatDate, formatDuration } from '../../utils/format.js'
 
@@ -12,6 +13,7 @@ defineProps({
 defineEmits(['sort', 'play'])
 
 const player = usePlayerStore()
+const { openTrackMenu } = useTrackMenu()
 
 // Header and rows share the same column layout so everything lines up.
 const columns =
@@ -55,6 +57,7 @@ const isCurrent = (track) => player.currentTrack?.id === track.id
       :title="track.isMissing ? 'File not found' : undefined"
       class="group h-14 rounded-md transition-colors hover:bg-white/5"
       @dblclick="$emit('play', track)"
+      @contextmenu.prevent="openTrackMenu(track)"
     >
       <button
         type="button"

@@ -57,6 +57,7 @@ export const usePlayerStore = defineStore('player', () => {
   const failedIds = new Set() // songs that failed to load in this listening session
   let countedCurrent = false // has the current song been added to the history yet?
   let errorTimer
+  let volumeBeforeMute = volume.value > 0 ? volume.value : 0.8
 
   const currentTrack = computed(() => queue.value[currentIndex.value] ?? null)
   const canNext = computed(
@@ -139,9 +140,10 @@ export const usePlayerStore = defineStore('player', () => {
     failedIds.clear() // a fresh session: give songs that failed earlier another chance
     clearError()
     sourceQueue.value = list
+    // queue gets its OWN array: editing it must never change sourceQueue by accident.
     queue.value = shuffle.value
       ? [track, ...shuffled(list.filter((item) => item.id !== track.id))]
-      : list
+      : [...list]
     load(queue.value.findIndex((item) => item.id === track.id))
   }
 
@@ -199,6 +201,72 @@ export const usePlayerStore = defineStore('player', () => {
 
   function cycleRepeat() {
     repeat.value = { off: 'all', all: 'one', one: 'off' }[repeat.value]
+  }
+
+  // ---- Queue editing ----
+
+  // Jump to a song that is already in the queue.
+  function jumpTo(index) {
+    if (index < 0 || index >= queue.value.length) return
+    failedIds.delete(queue.value[index].id) // an explicit click counts as a retry
+    clearError()
+    load(index)
+  }
+
+  // Removes an upcoming song. The song that is playing can't be removed.
+  function removeFromQueue(index) {
+    if (index === currentIndex.value || index < 0 || index >= queue.value.length) return
+    const [removed] = queue.value.splice(index, 1)
+    if (index < currentIndex.value) currentIndex.value -= 1
+
+    // Forget it in the normal order too, or turning shuffle off would bring it back.
+    const sourceIndex = sourceQueue.value.findIndex((item) => item.id === removed.id)
+    if (sourceIndex !== -1) sourceQueue.value.splice(sourceIndex, 1)
+  }
+
+  // Keeps the song that is playing and everything before it; drops what was coming next.
+  function clearUpcoming() {
+    if (!currentTrack.value) return
+    queue.value = queue.value.slice(0, currentIndex.value + 1)
+    sourceQueue.value = [...queue.value]
+  }
+
+  // Plays `track` right after the current song. With nothing playing, just plays it.
+  function playNext(track) {
+    if (track.isMissing) return
+    if (!currentTrack.value) return playTrack(track)
+
+    queue.value.splice(currentIndex.value + 1, 0, track)
+    const currentInSource = sourceQueue.value.findIndex((item) => item.id === currentTrack.value.id)
+    sourceQueue.value.splice(currentInSource === -1 ? sourceQueue.value.length : currentInSource + 1, 0, track)
+  }
+
+  // Puts `track` at the end of the queue. With nothing playing, just plays it.
+  function addToQueue(track) {
+    if (track.isMissing) return
+    if (!currentTrack.value) return playTrack(track)
+
+    queue.value.push(track)
+    sourceQueue.value.push(track)
+  }
+
+  // ---- Helpers for keyboard shortcuts ----
+
+  function seekBy(seconds) {
+    seek(audio.currentTime + seconds)
+  }
+
+  function changeVolume(delta) {
+    setVolume(Math.round((volume.value + delta) * 100) / 100)
+  }
+
+  function toggleMute() {
+    if (volume.value > 0) {
+      volumeBeforeMute = volume.value
+      setVolume(0)
+    } else {
+      setVolume(volumeBeforeMute || 0.8)
+    }
   }
 
   // ---- Audio element events ----
@@ -286,5 +354,6 @@ export const usePlayerStore = defineStore('player', () => {
     queue, currentIndex, currentTrack, isPlaying, currentTime, duration,
     volume, shuffle, repeat, error, canNext,
     playTrack, togglePlay, next, previous, seek, setVolume, toggleShuffle, cycleRepeat,
+    jumpTo, removeFromQueue, clearUpcoming, playNext, addToQueue, seekBy, changeVolume, toggleMute,
   }
 })

@@ -2,12 +2,14 @@
 import { computed } from 'vue'
 import { Play } from 'lucide-vue-next'
 import ArtworkTile from '../common/ArtworkTile.vue'
+import { useTrackMenu } from '../../composables/useTrackMenu'
 import { usePlayerStore } from '../../stores/player'
 
 const props = defineProps({ track: { type: Object, required: true } })
 defineEmits(['play'])
 
 const player = usePlayerStore()
+const { openTrackMenu } = useTrackMenu()
 const isCurrent = computed(() => player.currentTrack?.id === props.track.id)
 </script>
 
@@ -18,6 +20,7 @@ const isCurrent = computed(() => player.currentTrack?.id === props.track.id)
     :class="track.isMissing ? 'opacity-45' : ''"
     :title="track.isMissing ? 'File not found' : undefined"
     @click="$emit('play')"
+    @contextmenu.prevent="openTrackMenu(track)"
   >
     <div class="relative">
       <ArtworkTile :hue="track.hue" :src="track.artworkUrl" class="aspect-square w-full rounded-lg" />

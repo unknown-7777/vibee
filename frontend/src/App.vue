@@ -2,9 +2,14 @@
 import { onMounted } from 'vue'
 import AppSidebar from './components/layout/AppSidebar.vue'
 import PlayerBar from './components/player/PlayerBar.vue'
+import QueuePanel from './components/player/QueuePanel.vue'
+import { useShortcuts } from './composables/useShortcuts'
 import { useLibraryStore } from './stores/library'
+import { useUiStore } from './stores/ui'
 
 const library = useLibraryStore()
+const ui = useUiStore()
+useShortcuts()
 
 onMounted(async () => {
   await library.load()
@@ -27,6 +32,16 @@ onMounted(async () => {
           </RouterView>
         </div>
       </main>
+
+      <!-- The queue slides open by animating the width of this wrapper; the panel inside keeps a
+           fixed width, so its content never gets squashed mid-animation. -->
+      <div
+        class="shrink-0 overflow-hidden transition-[width] duration-200 ease-out"
+        :class="ui.isQueueOpen ? 'w-80' : 'w-0'"
+        :inert="!ui.isQueueOpen"
+      >
+        <QueuePanel />
+      </div>
     </div>
 
     <!-- Outside <RouterView>, so it never unmounts when you change page -->
