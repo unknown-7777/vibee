@@ -3,6 +3,7 @@ import { onMounted } from 'vue'
 import AppSidebar from './components/layout/AppSidebar.vue'
 import PlayerBar from './components/player/PlayerBar.vue'
 import QueuePanel from './components/player/QueuePanel.vue'
+import { useMediaSession } from './composables/useMediaSession'
 import { useShortcuts } from './composables/useShortcuts'
 import { useLibraryStore } from './stores/library'
 import { useUiStore } from './stores/ui'
@@ -10,6 +11,7 @@ import { useUiStore } from './stores/ui'
 const library = useLibraryStore()
 const ui = useUiStore()
 useShortcuts()
+useMediaSession()
 
 onMounted(async () => {
   await library.load()

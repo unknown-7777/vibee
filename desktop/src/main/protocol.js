@@ -15,8 +15,9 @@ export function registerMediaScheme() {
   protocol.registerSchemesAsPrivileged([
     {
       scheme: SCHEME,
-      // stream + supportFetchAPI are what <audio> needs.
-      privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true },
+      // stream + supportFetchAPI are what <audio> needs. corsEnabled lets the page read
+      // cover images with fetch(), which the Now Playing widget needs (see useMediaSession).
+      privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true },
     },
   ])
 }
@@ -32,7 +33,11 @@ export function registerMediaProtocol() {
     if (url.hostname === 'artwork') {
       if (!ARTWORK_FILE.test(name)) return new Response('Bad request', { status: 400 })
       try {
-        return await net.fetch(pathToFileURL(path.join(getArtworkDir(), name)).toString())
+        const file = await net.fetch(pathToFileURL(path.join(getArtworkDir(), name)).toString())
+        // fetch() from the page is only allowed when the response says so.
+        const headers = new Headers(file.headers)
+        headers.set('Access-Control-Allow-Origin', '*')
+        return new Response(file.body, { status: file.status, headers })
       } catch {
         return new Response('Not found', { status: 404 })
       }

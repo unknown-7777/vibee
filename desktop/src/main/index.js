@@ -8,9 +8,15 @@ import { openDatabase, closeDatabase } from './db/connection.js'
 import { registerMediaProtocol, registerMediaScheme } from './protocol.js'
 
 // Use ~/Library/Application Support/Vibee regardless of how the app is launched.
-// Both lines below must run BEFORE the app is ready.
+// These lines must run BEFORE the app is ready.
 app.setPath('userData', path.join(app.getPath('appData'), 'Vibee'))
 registerMediaScheme()
+
+// Chromium's connection to the operating system's media controls: the keyboard's media
+// keys and the "Now Playing" widget. Recent Electron versions may already switch this on;
+// naming it explicitly makes sure. (Do NOT also register media keys with globalShortcut:
+// that can break this mechanism.)
+app.commandLine.appendSwitch('enable-features', 'HardwareMediaKeyHandling,MediaSessionService')
 
 app.whenReady().then(() => {
   openDatabase()

@@ -153,6 +153,16 @@ export const usePlayerStore = defineStore('player', () => {
     else audio.pause()
   }
 
+  // Unlike togglePlay, these never flip the state: "play" while already playing does nothing.
+  // Media keys and the Now Playing widget send separate play and pause commands.
+  function play() {
+    if (currentTrack.value && audio.paused) startPlayback()
+  }
+
+  function pause() {
+    if (currentTrack.value) audio.pause()
+  }
+
   function next() {
     if (!currentTrack.value) return
     const index = findIndex(currentIndex.value, 1, repeat.value !== 'off')
@@ -353,7 +363,7 @@ export const usePlayerStore = defineStore('player', () => {
   return {
     queue, currentIndex, currentTrack, isPlaying, currentTime, duration,
     volume, shuffle, repeat, error, canNext,
-    playTrack, togglePlay, next, previous, seek, setVolume, toggleShuffle, cycleRepeat,
+        playTrack, togglePlay, play, pause, next, previous, seek, setVolume, toggleShuffle, cycleRepeat,
     jumpTo, removeFromQueue, clearUpcoming, playNext, addToQueue, seekBy, changeVolume, toggleMute,
   }
 })
