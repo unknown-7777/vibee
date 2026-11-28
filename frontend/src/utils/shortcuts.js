@@ -43,6 +43,7 @@ export function resolveShortcut(event) {
     case 's': case 'S': return { type: 'toggleShuffle' }
     case 'r': case 'R': return { type: 'cycleRepeat' }
     case 'q': case 'Q': return { type: 'toggleQueue' }
+    case 'l': case 'L': return { type: 'toggleFavorite' } // L for "love"
     case 'Escape': return { type: 'closeQueue' }
     default: return null
   }

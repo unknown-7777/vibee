@@ -18,6 +18,7 @@ export function useShortcuts() {
     toggleMute: () => player.toggleMute(),
     toggleShuffle: () => player.toggleShuffle(),
     cycleRepeat: () => player.cycleRepeat(),
+    toggleFavorite: () => player.toggleFavoriteCurrent(),
     toggleQueue: () => ui.toggleQueue(),
     closeQueue: () => ui.closeQueue(),
   }

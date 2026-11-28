@@ -260,6 +260,28 @@ export const usePlayerStore = defineStore('player', () => {
     sourceQueue.value.push(track)
   }
 
+  // ---- Lists and favorites ----
+
+  // The "Shuffle" buttons: turn shuffle on and start from a random song of the list.
+  function playShuffled(trackList) {
+    const playable = trackList.filter((item) => !item.isMissing)
+    if (playable.length === 0) return
+    shuffle.value = true
+    playTrack(playable[Math.floor(Math.random() * playable.length)], playable)
+  }
+
+  // The playing song's current library entry. The queue may hold an older copy of it
+  // (the library gets re-read now and then), so favorites are always read from here.
+  const libraryEntry = computed(() => {
+    const id = currentTrack.value?.id
+    return id ? useLibraryStore().byId.get(id) ?? null : null
+  })
+  const isCurrentFavorite = computed(() => libraryEntry.value?.isFavorite ?? false)
+
+  function toggleFavoriteCurrent() {
+    if (libraryEntry.value) useLibraryStore().toggleFavorite(libraryEntry.value)
+  }
+
   // ---- Helpers for keyboard shortcuts ----
 
   function seekBy(seconds) {
@@ -364,6 +386,6 @@ export const usePlayerStore = defineStore('player', () => {
     queue, currentIndex, currentTrack, isPlaying, currentTime, duration,
     volume, shuffle, repeat, error, canNext,
         playTrack, togglePlay, play, pause, next, previous, seek, setVolume, toggleShuffle, cycleRepeat,
-    jumpTo, removeFromQueue, clearUpcoming, playNext, addToQueue, seekBy, changeVolume, toggleMute,
+    jumpTo, removeFromQueue, clearUpcoming, playNext, addToQueue, seekBy, changeVolume, toggleMute, playShuffled, isCurrentFavorite, toggleFavoriteCurrent,
   }
 })

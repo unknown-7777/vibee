@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import {
-  ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX,
+  Heart, ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX,
 } from 'lucide-vue-next'
 import ArtworkTile from '../common/ArtworkTile.vue'
 import IconButton from '../common/IconButton.vue'
@@ -55,6 +55,15 @@ function onScrubEnd(value) {
             {{ player.error ?? player.currentTrack.artist }}
           </p>
         </div>
+        <button
+          type="button"
+          class="shrink-0 rounded-full p-1.5 transition-colors"
+          :class="player.isCurrentFavorite ? 'text-accent' : 'text-muted hover:text-fg'"
+          :title="player.isCurrentFavorite ? 'Remove from Favorites (L)' : 'Add to Favorites (L)'"
+          @click="player.toggleFavoriteCurrent()"
+        >
+          <Heart :size="16" :fill="player.isCurrentFavorite ? 'currentColor' : 'none'" />
+        </button>
       </template>
       <p v-else class="text-sm text-muted">Nothing playing</p>
     </div>

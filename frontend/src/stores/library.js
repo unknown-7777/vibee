@@ -130,6 +130,29 @@ export const useLibraryStore = defineStore('library', () => {
     if (track) track.lastPlayedAt = playedAt
   }
 
+  // ---- Favorites ----
+
+  const byId = computed(() => new Map(tracks.value.map((track) => [track.id, track])))
+
+  // The heart changes at once; if saving fails, it changes back.
+  async function setFavorite(track, isFavorite) {
+    if (!bridge) return
+    const before = { isFavorite: track.isFavorite, favoritedAt: track.favoritedAt }
+    track.isFavorite = isFavorite
+    track.favoritedAt = isFavorite ? new Date().toISOString() : null
+    try {
+      const saved = await bridge.library.setFavorite(track.id, isFavorite)
+      if (saved === null) throw new Error('That song no longer exists')
+    } catch (err) {
+      console.error('Could not save favorite', err)
+      Object.assign(track, before)
+    }
+  }
+
+  function toggleFavorite(track) {
+    return setFavorite(track, !track.isFavorite)
+  }
+
   const recentlyAdded = computed(() =>
     [...tracks.value].sort((a, b) => time(b.addedAt) - time(a.addedAt)).slice(0, SHELF_SIZE),
   )
@@ -141,7 +164,12 @@ export const useLibraryStore = defineStore('library', () => {
       .slice(0, SHELF_SIZE),
   )
 
-  const favorites = computed(() => tracks.value.filter((track) => track.isFavorite).slice(0, SHELF_SIZE))
+  const favoriteTracks = computed(() => tracks.value.filter((track) => track.isFavorite))
+
+  // The Home shelf: newest favorite first.
+  const favorites = computed(() =>
+    [...favoriteTracks.value].sort((a, b) => time(b.favoritedAt) - time(a.favoritedAt)).slice(0, SHELF_SIZE),
+  )
 
   const recentPlaylists = computed(() =>
     [...playlists.value].sort((a, b) => time(b.createdAt) - time(a.createdAt)).slice(0, 4),
@@ -150,7 +178,7 @@ export const useLibraryStore = defineStore('library', () => {
   return {
     tracks, playlists, isLoading, error, isEmpty, missingCount, load,
     isImporting, importProgress, lastImport, importError, importMusic, dismissImportSummary,
-    isVerifying, rescanNote, verify, removeMissing, markPlayed,
+    isVerifying, rescanNote, verify, removeMissing, markPlayed, byId, setFavorite, toggleFavorite, favoriteTracks,
     recentlyAdded, recentlyPlayed, favorites, recentPlaylists,
   }
 })

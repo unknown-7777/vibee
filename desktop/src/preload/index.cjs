@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('vibee', {
     verify: () => ipcRenderer.invoke('library:verify'),
     removeMissing: () => ipcRenderer.invoke('library:removeMissing'),
     recordPlay: (trackId) => ipcRenderer.invoke('library:recordPlay', trackId),
+    setFavorite: (trackId, isFavorite) => ipcRenderer.invoke('library:setFavorite', trackId, isFavorite),
 
     // Subscribes to progress updates and returns a function that unsubscribes.
     // The raw IPC event object is deliberately NOT passed to the page.

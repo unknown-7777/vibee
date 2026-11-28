@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently -k -n vite,electron -c magenta,cyan \"npm --prefix ../frontend run dev\" \"wait-on tcp:127.0.0.1:5173 && electron .\"",
-    "rebuild": "electron-rebuild -f -w better-sqlite3"
+    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "check": "find src -name \"*.js\" -o -name \"*.cjs\" | sort | while read f; do node --check \"$f\" || exit 1; done"
   },
   "keywords": [],
   "type": "module",

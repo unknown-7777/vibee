@@ -1,5 +1,7 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
-import { countMissingTracks, getAllTracks, recordPlay, removeMissingTracks } from '../db/tracks.js'
+import {
+  countMissingTracks, getAllTracks, recordPlay, removeMissingTracks, setFavorite,
+} from '../db/tracks.js'
 import { getArtworkDir } from '../paths.js'
 import { importPaths } from '../services/importer.js'
 import { AUDIO_EXTENSIONS } from '../services/scanner.js'
@@ -13,6 +15,13 @@ export function registerLibraryIpc() {
   // The player calls this once a song has been listened to for a while.
   ipcMain.handle('library:recordPlay', (_event, trackId) =>
     typeof trackId === 'string' ? recordPlay(trackId) : null,
+  )
+
+  // The heart on or off. Returns the saved state, or null if the song doesn't exist.
+  ipcMain.handle('library:setFavorite', (_event, trackId, isFavorite) =>
+    typeof trackId === 'string' && typeof isFavorite === 'boolean'
+      ? setFavorite(trackId, isFavorite)
+      : null,
   )
 
   ipcMain.handle('library:import', async (event) => {

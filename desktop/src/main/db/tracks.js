@@ -14,9 +14,7 @@ const SELECT_TRACKS = `
     t.is_missing   AS isMissing,
     t.added_at     AS addedAt,
     (SELECT MAX(h.played_at) FROM play_history h WHERE h.track_id = t.id) AS lastPlayedAt,
-    EXISTS (
-      SELECT 1 FROM favorites f WHERE f.track_id = t.id AND f.deleted_at IS NULL
-    ) AS isFavorite
+    (SELECT f.created_at FROM favorites f WHERE f.track_id = t.id AND f.deleted_at IS NULL) AS favoritedAt
   FROM tracks t
   WHERE t.deleted_at IS NULL
 `
@@ -28,7 +26,7 @@ export function getAllTracks() {
     .map((row) => ({
       ...row,
       isMissing: Boolean(row.isMissing),
-      isFavorite: Boolean(row.isFavorite),
+      isFavorite: row.favoritedAt !== null, // favoritedAt: when the song became a favorite
     }))
 }
 
@@ -80,7 +78,6 @@ export function upsertTracks(tracks, addedAt) {
 
   return { added, updated }
 }
-
 
 // ---- Missing-file support -------------------------------------------------
 
@@ -137,4 +134,32 @@ export function recordPlay(trackId) {
     )
     .run(randomUUID(), playedAt, trackId)
   return changes > 0 ? playedAt : null
+}
+
+// ---- Favorites ------------------------------------------------------------
+
+// Sets whether a song is a favorite. Safe to call repeatedly with the same value.
+// Returns the new state, or null if the song doesn't exist.
+export function setFavorite(trackId, isFavorite) {
+  const db = getDb()
+  const exists = db.prepare('SELECT 1 FROM tracks WHERE id = ? AND deleted_at IS NULL').get(trackId)
+  if (!exists) return null
+
+  const now = new Date().toISOString()
+  if (isFavorite) {
+    // Insert, or bring back a favorite that was removed earlier. Already being a
+    // favorite changes nothing (so timestamps stay put).
+    db.prepare(
+      `INSERT INTO favorites (track_id, created_at, updated_at, deleted_at) VALUES (?, ?, ?, NULL)
+       ON CONFLICT(track_id) DO UPDATE SET
+         created_at = excluded.created_at, updated_at = excluded.updated_at, deleted_at = NULL
+       WHERE favorites.deleted_at IS NOT NULL`,
+    ).run(trackId, now, now)
+  } else {
+    // A soft delete, like everywhere else, so sync can learn about it later.
+    db.prepare(
+      'UPDATE favorites SET deleted_at = ?, updated_at = ? WHERE track_id = ? AND deleted_at IS NULL',
+    ).run(now, now, trackId)
+  }
+  return isFavorite
 }
